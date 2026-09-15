@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 NAME = "Mitia"
-VERSION = "2.6.0"
+VERSION = "2.7.0"
 
 IMG = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 VID = {".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v"}
@@ -74,6 +74,8 @@ def asset(name):
 
 def load_persian_font():
     font = asset("Vazirmatn-Regular.ttf")
+    if not font.is_file():
+        font = asset("fonts/ttf/Vazirmatn-Regular.ttf")
     if font.is_file() and sys.platform == "win32":
         ctypes.windll.gdi32.AddFontResourceExW(str(font), 0x10, 0)
 
@@ -152,6 +154,47 @@ class DnDApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.TkdndVersion = TkinterDnD._require(self)
 
 
+class CompactMenu(ctk.CTkOptionMenu):
+    def _open_dropdown_menu(self):
+        root = self.winfo_toplevel()
+        if self._state == "disabled":
+            return
+        if root.menu_owner is self:
+            root.dismiss_menu()
+            return
+        root.dismiss_menu()
+        root.update_idletasks()
+        root.menu_owner = self
+        popup = ctk.CTkFrame(root, fg_color=C["panel"], border_color=C["line"],
+                             border_width=1, corner_radius=8)
+        root.menu_popup = popup
+        for value in self._values:
+            selected = value == self.get()
+            button = ctk.CTkButton(
+                popup, text=value, height=32, corner_radius=5,
+                fg_color=C["line"] if selected else "transparent",
+                hover_color=C["hover"], text_color=C["text"],
+                font=ctk.CTkFont(size=13),
+                command=lambda v=value: self.choose(v))
+            button.pack(fill="x", padx=5, pady=2)
+        scale = self._get_widget_scaling()
+        x = self.winfo_rootx() - root.winfo_rootx()
+        y = self.winfo_rooty() - root.winfo_rooty() + self.winfo_height() + 4
+        height = (len(self._values) * 36 + 4) * scale
+        if y + height > root.winfo_height():
+            y = self.winfo_rooty() - root.winfo_rooty() - height - 4
+        popup.configure(width=self.winfo_width() / scale, height=height / scale)
+        popup.pack_propagate(False)
+        popup.place(x=x / scale, y=max(0, y) / scale)
+        popup.lift()
+
+    def choose(self, value):
+        self.set(value)
+        self.winfo_toplevel().dismiss_menu()
+        if self._command:
+            self._command(value)
+
+
 class App(DnDApp):
     def __init__(self):
         super().__init__()
@@ -165,6 +208,13 @@ class App(DnDApp):
         self.busy = False
         self.files = {"image": [], "video": []}
         self.events = queue.Queue()
+        self.out = tk.StringVar(master=self)
+        self.saved_settings = {}
+        self.menu_popup = None
+        self.menu_owner = None
+        self.bind("<Button-1>", self.dismiss_outside, add="+")
+        self.bind("<Escape>", lambda _e: self.dismiss_menu(), add="+")
+        self.bind("<Configure>", lambda e: self.dismiss_menu() if e.widget is self else None, add="+")
         
         self.title(f"{NAME} {VERSION}")
         self.geometry("980x820")
@@ -197,8 +247,32 @@ class App(DnDApp):
         return "e" if self.rtl() else "w"
 
     def clear(self):
+        self.dismiss_menu()
         for w in self.winfo_children():
             w.destroy()
+
+    def dismiss_menu(self):
+        if self.menu_popup is not None:
+            self.menu_popup.destroy()
+        self.menu_popup = None
+        self.menu_owner = None
+
+    def dismiss_outside(self, event):
+        widget = event.widget
+        while widget is not None:
+            if widget in (self.menu_popup, self.menu_owner):
+                return
+            widget = getattr(widget, "master", None)
+        self.dismiss_menu()
+
+    def save_settings(self):
+        if self.mode is None:
+            return
+        keys = ("q", "gray", "fmt", "dim", "custom") if self.mode == "image" else ("q", "codec", "res")
+        state = {key: getattr(self, key).get() for key in keys}
+        if self.mode == "image":
+            state["axis"] = "width" if self.axis.get() == self.tr("width") else "height"
+        self.saved_settings[self.mode] = state
 
     def button(self, p, text, cmd, active=False, width=0, danger=False):
         fg_col = C["danger"] if danger else (C["blue"] if active else C["panel"])
@@ -213,12 +287,14 @@ class App(DnDApp):
         )
 
     def header(self, p):
+        name = get_display(arabic_reshaper.reshape("میتیا")) if self.rtl() else NAME
+        self.title(f"{name} {VERSION}")
         h = ctk.CTkFrame(p, fg_color="transparent")
-        h.pack(fill="x", pady=(0, 20))
+        h.pack(fill="x", pady=(0, 12))
         
         logo_frame = ctk.CTkFrame(h, fg_color="transparent")
         logo_frame.pack(side=self.side())
-        ctk.CTkLabel(logo_frame, text=NAME, font=ctk.CTkFont(size=28, weight="bold"), text_color=C["text"]).pack(side=self.side())
+        ctk.CTkLabel(logo_frame, text=name, font=ctk.CTkFont(size=28, weight="bold"), text_color=C["text"]).pack(side=self.side())
         ctk.CTkLabel(logo_frame, text=f"v{VERSION}", text_color=C["muted"], font=ctk.CTkFont(size=12)).pack(side=self.side(), padx=8, pady=(10, 0))
         
         controls = ctk.CTkFrame(h, fg_color="transparent")
@@ -260,12 +336,14 @@ class App(DnDApp):
     def change_lang(self):
         if self.busy:
             return
+        self.save_settings()
         self.lang = "en" if self.rtl() else "fa"
         self.home() if self.mode is None else self.workspace()
 
     def pick(self, mode):
         if self.busy or self.mode == mode:
             return
+        self.save_settings()
         self.mode = mode
         self.workspace()
 
@@ -273,7 +351,7 @@ class App(DnDApp):
         self.clear()
         
         root = ctk.CTkFrame(self, fg_color="transparent")
-        root.pack(fill="both", expand=True, padx=40, pady=25)
+        root.pack(fill="both", expand=True, padx=40, pady=20)
         self.header(root)
         
         tabs = ctk.CTkFrame(root, fg_color="transparent")
@@ -284,9 +362,6 @@ class App(DnDApp):
             self.button(tabs, self.tr(m), lambda v=m: self.pick(v), m == self.mode, 140).pack(side=self.side(), padx=5)
             
         self.status = tk.StringVar(value=self.msg("selected", count=len(self.files[self.mode])))
-        
-        self.dropzone(root)
-        self.settings_ui(root)
         
         bottom = ctk.CTkFrame(root, fg_color="transparent")
         bottom.pack(fill="x", side="bottom", pady=(15, 0))
@@ -306,9 +381,11 @@ class App(DnDApp):
             fg_color=C["blue"], hover_color=C["hover"], text_color="#ffffff"
         )
         self.start_button.pack(side="right" if self.rtl() else "left")
+        self.dropzone(root)
+        self.settings_ui(root)
 
     def dropzone(self, p):
-        card = ctk.CTkFrame(p, fg_color=C["panel"], corner_radius=12, border_width=1, border_color=C["line"], height=250)
+        card = ctk.CTkFrame(p, fg_color=C["panel"], corner_radius=12, border_width=1, border_color=C["line"], height=210)
         card.pack(fill="x", pady=(0, 15))
         card.pack_propagate(False)
         
@@ -329,7 +406,7 @@ class App(DnDApp):
         self.list.dnd_bind("<<Drop>>", self.drop)
         self.list.bind("<Double-Button-1>", lambda _e: self.add())
         
-        self.drop_hint = tk.Label(self.list_area, text="+", bg=C["field"], fg=C["line"], font=("Vazirmatn", 60, "bold"), cursor="hand2")
+        self.drop_hint = tk.Label(self.list_area, text="+", bg=C["field"], fg=C["blue"], font=("Vazirmatn", 60, "bold"), cursor="hand2")
         self.drop_hint.drop_target_register(DND_FILES)
         self.drop_hint.dnd_bind("<<Drop>>", self.drop)
         self.drop_hint.bind("<Double-Button-1>", lambda _e: self.add())
@@ -340,7 +417,7 @@ class App(DnDApp):
         actions = (("clear", self.clear_files), ("remove", self.remove), ("folder", self.folder), ("add", self.add)) if self.rtl() else (("add", self.add), ("folder", self.folder), ("remove", self.remove), ("clear", self.clear_files))
         
         row = ctk.CTkFrame(card, fg_color="transparent")
-        row.pack(fill="x", padx=16, pady=(0, 12))
+        row.pack(fill="x", side="bottom", before=self.list_area, padx=16, pady=(0, 12))
         
         for k, fn in actions:
             is_danger = k in ["clear", "remove"]
@@ -349,15 +426,14 @@ class App(DnDApp):
     def settings_ui(self, p):
         panel = ctk.CTkFrame(p, fg_color=C["panel"], corner_radius=12, border_width=1, border_color=C["line"])
         panel.pack(fill="x", pady=(0, 5))
-        panel.grid_columnconfigure((0, 1), weight=1)
+        panel.grid_columnconfigure((0, 1), weight=1, uniform="settings")
         
         self.q = tk.IntVar(value=80 if self.mode == "image" else 23)
-        self.out = tk.StringVar()
         self.gray = tk.BooleanVar()
         
         left, right = (1, 0) if self.rtl() else (0, 1)
         
-        self.group(panel, left, 0, self.tr("quality"), self.quality)
+        self.group(panel, left, 0, self.tr("quality") if self.mode == "image" else "CRF", self.quality)
         
         if self.mode == "image":
             self.fmt = tk.StringVar(value="Original")
@@ -366,7 +442,7 @@ class App(DnDApp):
             self.custom = tk.StringVar()
             
             self.group(panel, right, 0, self.tr("format"), lambda p: self.menu(p, self.fmt, ["Original", "JPEG", "WebP"]))
-            self.group(panel, left, 1, self.tr("dimensions"), self.dimension)
+            self.group(panel, 0, 1, self.tr("dimensions"), self.dimension, span=2)
             ctk.CTkCheckBox(panel, text=self.tr("gray"), variable=self.gray, fg_color=C["blue"], hover_color=C["hover"], text_color=C["text"], font=ctk.CTkFont(size=13)).grid(row=2, column=left, sticky=self.anchor(), padx=25, pady=(5, 15))
         else:
             self.codec = tk.StringVar(value="H.264 / AVC")
@@ -382,26 +458,33 @@ class App(DnDApp):
         a, b = (2, 0) if self.rtl() else (0, 2)
         
         ctk.CTkLabel(out_frame, text=self.tr("output"), width=90, anchor=self.anchor(), font=ctk.CTkFont(size=14, weight="bold")).grid(row=0, column=a, padx=(0, 15))
-        ctk.CTkEntry(out_frame, textvariable=self.out, justify="right" if self.rtl() else "left", height=40, fg_color=C["field"], border_color=C["line"], corner_radius=6, text_color=C["text"], font=ctk.CTkFont(size=13)).grid(row=0, column=1, sticky="ew")
+        self.output_entry = ctk.CTkEntry(out_frame, textvariable=self.out, justify="left", height=40, fg_color=C["field"], border_color=C["line"], corner_radius=6, text_color=C["text"], font=ctk.CTkFont(size=13))
+        self.output_entry.grid(row=0, column=1, sticky="ew", padx=10)
         self.button(out_frame, self.tr("browse"), self.choose_output, width=110).grid(row=0, column=b, padx=(15, 0))
 
-    def group(self, p, col, row, label, build):
+        state = self.saved_settings.get(self.mode, {})
+        for key, value in state.items():
+            getattr(self, key).set(self.tr(value) if key == "axis" else value)
+        if self.mode == "image":
+            self.custom_toggle(self.dim.get())
+
+    def group(self, p, col, row, label, build, span=1):
         g = ctk.CTkFrame(p, fg_color="transparent")
-        g.grid(row=row, column=col, sticky="ew", padx=25, pady=15)
+        g.grid(row=row, column=col, columnspan=span, sticky="ew", padx=20, pady=12)
         
         label_col, control_col = (1, 0) if self.rtl() else (0, 1)
         g.grid_columnconfigure(control_col, weight=1)
         
-        ctk.CTkLabel(g, text=label, width=90, anchor=self.anchor(), font=ctk.CTkFont(size=14, weight="bold")).grid(row=0, column=label_col, padx=(0, 15) if not self.rtl() else (15, 0))
+        ctk.CTkLabel(g, text=label, width=80, anchor=self.anchor(), font=ctk.CTkFont(size=14, weight="bold")).grid(row=0, column=label_col, padx=(0, 10) if not self.rtl() else (10, 0))
         
         holder = ctk.CTkFrame(g, fg_color="transparent")
         holder.grid(row=0, column=control_col, sticky="ew")
         holder.grid_columnconfigure(0, weight=1)
-        build(holder).grid(row=0, column=0, sticky="ew")
+        build(holder).grid(row=0, column=0, sticky="ew" if label in (self.tr("quality"), "CRF") else self.anchor())
 
-    def menu(self, p, var, values):
-        menu = ctk.CTkOptionMenu(
-            p, variable=var, values=values, height=40, corner_radius=6,
+    def menu(self, p, var, values, width=160):
+        menu = CompactMenu(
+            p, variable=var, values=values, width=width, dynamic_resizing=False, height=36, corner_radius=6,
             fg_color=C["field"], button_color=C["line"], button_hover_color=C["blue"], text_color=C["text"],
             anchor="center", dropdown_fg_color=C["panel"], dropdown_hover_color=C["line"], 
             dropdown_font=ctk.CTkFont(family="Vazirmatn", size=13), font=ctk.CTkFont(size=13)
@@ -412,10 +495,10 @@ class App(DnDApp):
         f = ctk.CTkFrame(p, fg_color="transparent")
         f.grid_columnconfigure(0, weight=1)
         
-        value = ctk.CTkLabel(f, text=str(self.q.get()), width=40, font=ctk.CTkFont(size=13, weight="bold"), text_color=C["blue"])
+        value = ctk.CTkLabel(f, textvariable=self.q, width=32, font=ctk.CTkFont(size=13, weight="bold"), text_color=C["blue"])
         slider = ctk.CTkSlider(
             f, from_=1 if self.mode == "image" else 0, to=100 if self.mode == "image" else 51,
-            variable=self.q, command=lambda _x: value.configure(text=str(round(self.q.get()))),
+            variable=self.q, number_of_steps=99 if self.mode == "image" else 51, width=120,
             progress_color=C["blue"], button_color=C["text"], button_hover_color=C["blue"]
         )
         
@@ -430,19 +513,19 @@ class App(DnDApp):
 
     def dimension(self, p):
         f = ctk.CTkFrame(p, fg_color="transparent")
-        f.grid_columnconfigure(0, weight=1)
         
         menu = self.menu(f, self.dim, ["Original", "1920 × 1080", "1280 × 720", "800 × 600", "Custom"])
         menu.configure(command=self.custom_toggle)
-        menu.grid(row=0, column=0, sticky="ew")
+        self.dimension_menu = menu
+        menu.grid(row=0, column=1 if self.rtl() else 0)
         
-        self.custombox = ctk.CTkFrame(f, fg_color="transparent")
-        self.custombox.grid(row=1, column=0, sticky="ew", pady=(10, 0))
+        self.custombox = ctk.CTkFrame(f, fg_color=C["field"], corner_radius=6, border_width=1, border_color=C["line"])
+        self.custombox.grid(row=0, column=0 if self.rtl() else 1, padx=8)
         self.custombox.grid_columnconfigure(1, weight=1)
         
-        axis = self.menu(self.custombox, self.axis, [self.tr("width"), self.tr("height")])
+        axis = self.menu(self.custombox, self.axis, [self.tr("width"), self.tr("height")], width=88)
         numeric = (self.register(lambda v: v == "" or (v.isascii() and v.isdigit())), "%P")
-        entry = ctk.CTkEntry(self.custombox, textvariable=self.custom, validate="key", validatecommand=numeric, justify="center", height=40, fg_color=C["field"], border_color=C["line"], text_color=C["text"])
+        entry = ctk.CTkEntry(self.custombox, textvariable=self.custom, validate="key", validatecommand=numeric, justify="center", width=80, height=36, fg_color=C["field"], border_width=0, text_color=C["text"])
         px = ctk.CTkLabel(self.custombox, text="px", width=30, text_color=C["muted"], font=ctk.CTkFont(size=13))
         
         if self.rtl():

@@ -1,5 +1,6 @@
 import unittest
 import tempfile
+from unittest.mock import patch
 from pathlib import Path
 from PIL import Image
 
@@ -18,6 +19,7 @@ class SettingsTests(unittest.TestCase):
         for callback in self.app.tk.splitlist(self.app.tk.call("after", "info")):
             self.app.after_cancel(callback)
         self.app.destroy()
+        ctk.set_widget_scaling(1.0)
 
     def test_settings_survive_language_and_mode_changes(self):
         app = self.app
@@ -200,6 +202,33 @@ class SettingsTests(unittest.TestCase):
                     target = max(candidates, key=lambda p: p.stat().st_mtime_ns)
                     with Image.open(target) as result:
                         self.assertEqual(result.size, expected)
+
+    def test_output_edit_and_traces_survive_rebuilds(self):
+        app = self.app
+        initial = len(app.out.trace_info())
+        for _ in range(4):
+            app.output_entry.delete(0, "end")
+            app.output_entry.insert(0, "C:/Users/Test/My output")
+            app.change_lang()
+            self.assertEqual(app.output_entry.get(), "C:/Users/Test/My output")
+            self.assertEqual(len(app.out.trace_info()), initial)
+
+    def test_folder_drop_and_busy_guards(self):
+        app = self.app
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "photo.jpg"
+            Image.new("RGB", (20, 20), "red").save(source)
+            app.add_paths([folder, str(source), str(Path(folder) / "missing.jpg")])
+            self.assertEqual(app.files["image"], [str(source)])
+            app.busy = True
+            with patch("mitia.threading.Thread") as worker:
+                app.start()
+                app.clear_files()
+                app.pick("video")
+                worker.assert_not_called()
+            self.assertEqual(app.files["image"], [str(source)])
+            self.assertEqual(app.mode, "image")
+            app.busy = False
 
 
 if __name__ == "__main__":

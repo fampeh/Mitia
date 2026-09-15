@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 NAME = "Mitia"
-VERSION = "2.9.1"
+VERSION = "2.9.2"
 
 IMG = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 VID = {".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v"}
@@ -169,28 +169,41 @@ class CompactMenu(ctk.CTkOptionMenu):
         root.dismiss_menu()
         root.update_idletasks()
         root.menu_owner = self
-        popup = ctk.CTkFrame(root, fg_color=C["panel"], border_color=C["line"],
-                             border_width=1, corner_radius=8)
+        popup = tk.Toplevel(root)
+        popup.withdraw()
+        popup.overrideredirect(True)
+        popup.transient(root)
+        popup.configure(bg=C["line"])
+        popup.attributes("-topmost", True)
         root.menu_popup = popup
+        scale = self._get_widget_scaling()
+        x = self.winfo_rootx()
+        y = self.winfo_rooty() + self.winfo_height() + 4
+        desired = int((len(self._values) * 36 + 12) * scale)
+        height = min(desired, max(72, popup.winfo_screenheight() - y - 8))
+        popup.geometry(f"{self.winfo_width()}x{height}+{x}+{y}")
+        frame_type = ctk.CTkScrollableFrame if height < desired else ctk.CTkFrame
+        body = frame_type(popup, fg_color=C["panel"], corner_radius=6)
+        body.pack(fill="both", expand=True, padx=1, pady=1)
         for value in self._values:
             selected = value == self.get()
             button = ctk.CTkButton(
-                popup, text=value, height=32, corner_radius=5,
+                body, text=value, height=32, width=0, corner_radius=5,
                 fg_color=C["line"] if selected else "transparent",
                 hover_color=C["hover"], text_color=C["text"],
                 font=ctk.CTkFont(size=13),
                 command=lambda v=value: self.choose(v))
             button.pack(fill="x", padx=5, pady=2)
-        scale = self._get_widget_scaling()
-        x = self.winfo_rootx() - root.winfo_rootx()
-        y = self.winfo_rooty() - root.winfo_rooty() + self.winfo_height() + 4
-        height = (len(self._values) * 36 + 4) * scale
-        if y + height > root.winfo_height():
-            y = self.winfo_rooty() - root.winfo_rooty() - height - 4
-        popup.configure(width=self.winfo_width() / scale, height=height / scale)
-        popup.pack_propagate(False)
-        popup.place(x=x / scale, y=max(0, y) / scale)
+        popup.bind("<Escape>", lambda _e: root.dismiss_menu())
+        def close_if_unfocused():
+            if root.menu_popup is popup:
+                focus = root.focus_get()
+                if focus is None or focus.winfo_toplevel() is not popup:
+                    root.dismiss_menu()
+        popup.bind("<FocusOut>", lambda _e: root.after_idle(close_if_unfocused))
+        popup.deiconify()
         popup.lift()
+        popup.focus_set()
 
     def choose(self, value):
         self.set(value)
@@ -556,22 +569,22 @@ class App(DnDApp):
         menu.grid(row=0, column=1 if self.rtl() else 0)
         
         self.custombox = ctk.CTkFrame(f, fg_color=C["field"], corner_radius=6, border_width=1, border_color=C["line"])
-        self.custombox.grid(row=0, column=0 if self.rtl() else 1, padx=8)
+        self.custombox.grid(row=0, column=0 if self.rtl() else 1, padx=4)
         self.custombox.grid_columnconfigure(1, weight=1)
         
-        axis = self.menu(self.custombox, self.axis, [self.tr("width"), self.tr("height")], width=64)
+        axis = self.menu(self.custombox, self.axis, [self.tr("width"), self.tr("height")], width=88)
         numeric = (self.register(lambda v: v == "" or (v.isascii() and v.isdigit())), "%P")
-        entry = ctk.CTkEntry(self.custombox, textvariable=self.custom, validate="key", validatecommand=numeric, justify="center", width=60, height=36, fg_color=C["field"], border_width=0, text_color=C["text"])
+        entry = ctk.CTkEntry(self.custombox, textvariable=self.custom, validate="key", validatecommand=numeric, justify="center", width=72, height=36, fg_color=C["bg"], border_width=1, border_color=C["blue"], text_color=C["text"])
         px = ctk.CTkLabel(self.custombox, text=self.tr("pixel"), width=45, text_color=C["muted"], font=ctk.CTkFont(size=13))
         
         if self.rtl():
-            axis.grid(row=0, column=2, padx=(0, 10))
+            axis.grid(row=0, column=2, padx=(0, 4))
             entry.grid(row=0, column=1, sticky="ew")
-            px.grid(row=0, column=0, padx=(10, 0))
+            px.grid(row=0, column=0, padx=(4, 0))
         else:
-            axis.grid(row=0, column=0, padx=(0, 10))
+            axis.grid(row=0, column=0, padx=(0, 4))
             entry.grid(row=0, column=1, sticky="ew")
-            px.grid(row=0, column=2, padx=(10, 0))
+            px.grid(row=0, column=2, padx=(4, 0))
             
         self.custombox.grid_remove()
         return f

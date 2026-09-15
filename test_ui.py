@@ -151,6 +151,33 @@ class SettingsTests(unittest.TestCase):
                     menu.choose(menu.cget("values")[0])
                     self.assertIsNone(app.menu_popup)
 
+    def test_custom_selection_keeps_controls_fixed(self):
+        app = self.app
+        for language in ("fa", "en"):
+            if app.lang != language:
+                app.change_lang()
+            for scaling in (1.0, 1.25, 1.5):
+                ctk.set_widget_scaling(scaling)
+                app.geometry(f"{int(980 * scaling)}x{int(820 * scaling)}")
+                app.dim.set("Original")
+                app.custom_toggle("Original")
+                app.update()
+                panel = app.dimension_menu.master.master.master
+                def positions():
+                    return [(w.winfo_rootx(), w.winfo_width()) for w in panel.winfo_children() if w.grid_info().get("row") == 0]
+                before = positions()
+                app.dim.set("Custom")
+                app.custom_toggle("Custom")
+                app.update()
+                self.assertEqual(before, positions())
+                checkbox = app.gray_checkbox
+                browse = app.output_browse_button
+                if language == "fa":
+                    self.assertLess(abs(checkbox.winfo_rootx() - browse.winfo_rootx()), 3)
+                else:
+                    self.assertLess(abs(checkbox.winfo_rootx() + checkbox.winfo_width() - browse.winfo_rootx() - browse.winfo_width()), 3)
+        ctk.set_widget_scaling(1.0)
+
 
 if __name__ == "__main__":
     unittest.main()

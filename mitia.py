@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 NAME = "Mitia"
-VERSION = "2.9.3"
+VERSION = "2.9.4"
 
 IMG = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 VID = {".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v"}
@@ -485,7 +485,8 @@ class App(DnDApp):
         entry.bind("<FocusOut>", lambda _e: self.out.set(entry.get()), add="+")
         sync_output()
         self.output_entry.grid(row=0, column=1, sticky="ew", padx=10)
-        self.button(out_frame, self.tr("browse"), self.choose_output, width=110).grid(row=0, column=b, padx=(15, 0))
+        self.output_browse_button = self.button(out_frame, self.tr("browse"), self.choose_output, width=110)
+        self.output_browse_button.grid(row=0, column=b)
 
         state = self.saved_settings.get(self.mode, {})
         for key, value in state.items():
@@ -495,11 +496,12 @@ class App(DnDApp):
 
     def group(self, p, col, row, label, build, span=1):
         g = ctk.CTkFrame(p, fg_color="transparent")
-        g.grid(row=row, column=col, columnspan=span, sticky="ew", padx=8, pady=12)
+        padding = (25, 6) if self.rtl() else (6, 25)
+        g.grid(row=row, column=col, columnspan=span, sticky="ew", padx=padding if label == "" else 6, pady=12)
         if self.mode in ("image", "video"):
             g.grid_columnconfigure(0, weight=1)
             ctk.CTkLabel(g, text=label, anchor=self.anchor(), font=ctk.CTkFont(size=14, weight="bold")).grid(row=0, column=0, sticky="ew", pady=(0, 6))
-            build(g).grid(row=1, column=0, sticky="ew" if label in (self.tr("quality"), self.tr("compression")) else self.anchor())
+            build(g).grid(row=1, column=0, sticky="ew" if label in (self.tr("quality"), self.tr("compression")) else ("w" if self.rtl() else "e") if label == "" else self.anchor())
             return
         
         label_col, control_col = (1, 0) if self.rtl() else (0, 1)
@@ -530,7 +532,7 @@ class App(DnDApp):
         holder = ctk.CTkFrame(p, fg_color="transparent", height=36, width=100)
         holder.grid_propagate(False)
         self.gray_checkbox = ctk.CTkCheckBox(holder, text=self.tr("gray"), variable=self.gray, width=100, checkbox_width=20, checkbox_height=20, fg_color=C["blue"], hover_color=C["hover"], text_color=C["text"], font=ctk.CTkFont(size=12))
-        self.gray_checkbox.place(relx=1 if self.rtl() else 0, rely=.5, anchor="e" if self.rtl() else "w")
+        self.gray_checkbox.place(relx=0 if self.rtl() else 1, rely=.5, anchor="w" if self.rtl() else "e")
         return holder
 
     def quality(self, p):
@@ -561,8 +563,12 @@ class App(DnDApp):
         self.dimension_menu = menu
         menu.grid(row=0, column=1 if self.rtl() else 0)
         
-        self.custombox = ctk.CTkFrame(f, fg_color=C["field"], corner_radius=6, border_width=1, border_color=C["line"])
-        self.custombox.grid(row=0, column=0 if self.rtl() else 1, padx=4)
+        slot = ctk.CTkFrame(f, fg_color="transparent", width=221, height=36)
+        slot.grid(row=0, column=0 if self.rtl() else 1, padx=4)
+        slot.grid_propagate(False)
+        slot.grid_columnconfigure(0, weight=1)
+        self.custombox = ctk.CTkFrame(slot, fg_color=C["field"], corner_radius=6, border_width=1, border_color=C["line"])
+        self.custombox.grid(row=0, column=0, sticky="ew")
         self.custombox.grid_columnconfigure(1, weight=1)
         
         axis = self.menu(self.custombox, self.axis, [self.tr("width"), self.tr("height")], width=88)

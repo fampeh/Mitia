@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 NAME = "Mitia"
-VERSION = "2.8.0"
+VERSION = "2.9.0"
 
 IMG = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 VID = {".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v"}
@@ -35,7 +35,8 @@ C = {
 
 T = {
     "fa": {
-        "image": "تصاویر", "video": "ویدئوها", "lang": "انگلیسی",
+        "image": "تصاویر", "video": "ویدئوها", "lang": "English",
+        "output_hint": "خالی بگذارید: ذخیره کنار فایل اصلی",
         "drop": "فایل‌ها را اینجا رها کنید", "add": "افزودن فایل", 
         "folder": "افزودن پوشه", "remove": "حذف", "clear": "پاک کردن همه",
         "compression": "میزان فشرده‌سازی", "original": "اصلی", "custom_option": "دلخواه", "pixel": "پیکسل",
@@ -53,6 +54,7 @@ T = {
     },
     "en": {
         "image": "Images", "video": "Videos", "lang": "فارسی", 
+        "output_hint": "Leave blank to save beside each original file",
         "drop": "Drop files here", "add": "Add files", 
         "folder": "Add folder", "remove": "Remove", "clear": "Clear all",
         "compression": "Compression level", "original": "Original", "custom_option": "Custom", "pixel": "px",
@@ -428,15 +430,18 @@ class App(DnDApp):
     def settings_ui(self, p):
         panel = ctk.CTkFrame(p, fg_color=C["panel"], corner_radius=12, border_width=1, border_color=C["line"])
         panel.pack(fill="x", side="bottom", pady=(0, 5))
-        columns = 2 if self.mode == "image" else 3
+        columns = 3
         panel.grid_columnconfigure(tuple(range(columns)), weight=1, uniform="settings")
+        if self.mode == "image":
+            panel.grid_columnconfigure(tuple(range(columns)), uniform="")
+            panel.grid_columnconfigure(0 if self.rtl() else 2, weight=2)
         
         self.q = tk.IntVar(value=80 if self.mode == "image" else 23)
         self.gray = tk.BooleanVar()
         
         left, right = (1, 0) if self.rtl() else (0, 1)
         
-        self.group(panel, left if self.mode == "image" else (2 if self.rtl() else 0), 0, self.tr("quality") if self.mode == "image" else self.tr("compression"), self.quality)
+        self.group(panel, 2 if self.rtl() else 0, 0, self.tr("quality") if self.mode == "image" else self.tr("compression"), self.quality)
         
         if self.mode == "image":
             self.fmt = tk.StringVar(value="Original")
@@ -444,8 +449,8 @@ class App(DnDApp):
             self.axis = tk.StringVar(value=self.tr("width"))
             self.custom = tk.StringVar()
             
-            self.group(panel, right, 0, self.tr("format"), lambda p: self.menu(p, self.fmt, ["Original", "JPEG", "WebP"]))
-            self.group(panel, 0, 1, self.tr("dimensions"), self.dimension, span=2)
+            self.group(panel, 1, 0, self.tr("format"), lambda p: self.menu(p, self.fmt, ["Original", "JPEG", "WebP"]))
+            self.group(panel, 0 if self.rtl() else 2, 0, self.tr("dimensions"), self.dimension)
             ctk.CTkCheckBox(panel, text=self.tr("gray"), variable=self.gray, fg_color=C["blue"], hover_color=C["hover"], text_color=C["text"], font=ctk.CTkFont(size=13)).grid(row=2, column=left, sticky=self.anchor(), padx=25, pady=(5, 15))
         else:
             self.codec = tk.StringVar(value="H.264 / AVC")
@@ -461,7 +466,17 @@ class App(DnDApp):
         a, b = (2, 0) if self.rtl() else (0, 2)
         
         ctk.CTkLabel(out_frame, text=self.tr("output"), width=90, anchor=self.anchor(), font=ctk.CTkFont(size=14, weight="bold")).grid(row=0, column=a, padx=(0, 15))
-        self.output_entry = ctk.CTkEntry(out_frame, textvariable=self.out, justify="left", height=40, fg_color=C["field"], border_color=C["line"], corner_radius=6, text_color=C["text"], font=ctk.CTkFont(size=13))
+        self.output_entry = ctk.CTkEntry(out_frame, placeholder_text=self.tr("output_hint"), justify="left", height=40, fg_color=C["field"], border_color=C["line"], corner_radius=6, text_color=C["text"], font=ctk.CTkFont(size=13))
+        entry = self.output_entry
+        def sync_output(*_):
+            if entry.winfo_exists() and entry.get() != self.out.get():
+                entry.delete(0, tk.END)
+                if self.out.get():
+                    entry.insert(0, self.out.get())
+        self.out.trace_add("write", sync_output)
+        entry.bind("<KeyRelease>", lambda _e: self.out.set(entry.get()), add="+")
+        entry.bind("<FocusOut>", lambda _e: self.out.set(entry.get()), add="+")
+        sync_output()
         self.output_entry.grid(row=0, column=1, sticky="ew", padx=10)
         self.button(out_frame, self.tr("browse"), self.choose_output, width=110).grid(row=0, column=b, padx=(15, 0))
 
@@ -473,8 +488,8 @@ class App(DnDApp):
 
     def group(self, p, col, row, label, build, span=1):
         g = ctk.CTkFrame(p, fg_color="transparent")
-        g.grid(row=row, column=col, columnspan=span, sticky="ew", padx=20, pady=12)
-        if self.mode == "video":
+        g.grid(row=row, column=col, columnspan=span, sticky="ew", padx=10, pady=12)
+        if self.mode in ("image", "video"):
             g.grid_columnconfigure(0, weight=1)
             ctk.CTkLabel(g, text=label, anchor=self.anchor(), font=ctk.CTkFont(size=14, weight="bold")).grid(row=0, column=0, sticky="ew", pady=(0, 6))
             build(g).grid(row=1, column=0, sticky="ew")
@@ -490,11 +505,8 @@ class App(DnDApp):
         holder.grid_columnconfigure(0, weight=1)
         build(holder).grid(row=0, column=0, sticky="ew" if label in (self.tr("quality"), "CRF") else self.anchor())
 
-    def menu(self, p, var, values, width=160):
+    def menu(self, p, var, values, width=120):
         labels = {"Original": self.tr("original"), "Custom": self.tr("custom_option")}
-        if self.rtl():
-            labels.update({"JPEG": "جی‌پگ", "WebP": "وب‌پی", "H.264 / AVC": "اچ ۲۶۴", "H.265 / HEVC": "اچ ۲۶۵", "1080p": "۱۰۸۰", "720p": "۷۲۰", "480p": "۴۸۰"})
-            labels = {k: get_display(arabic_reshaper.reshape(v)) if k not in ("Original", "Custom") else v for k, v in labels.items()}
         reverse = {labels.get(v, v): v for v in values}
         display = tk.StringVar(master=self, value=labels.get(var.get(), var.get()))
         display.trace_add("write", lambda *_: var.set(reverse.get(display.get(), display.get())) if var.get() != reverse.get(display.get(), display.get()) else None)
@@ -539,9 +551,9 @@ class App(DnDApp):
         self.custombox.grid(row=0, column=0 if self.rtl() else 1, padx=8)
         self.custombox.grid_columnconfigure(1, weight=1)
         
-        axis = self.menu(self.custombox, self.axis, [self.tr("width"), self.tr("height")], width=88)
+        axis = self.menu(self.custombox, self.axis, [self.tr("width"), self.tr("height")], width=64)
         numeric = (self.register(lambda v: v == "" or (v.isascii() and v.isdigit())), "%P")
-        entry = ctk.CTkEntry(self.custombox, textvariable=self.custom, validate="key", validatecommand=numeric, justify="center", width=80, height=36, fg_color=C["field"], border_width=0, text_color=C["text"])
+        entry = ctk.CTkEntry(self.custombox, textvariable=self.custom, validate="key", validatecommand=numeric, justify="center", width=60, height=36, fg_color=C["field"], border_width=0, text_color=C["text"])
         px = ctk.CTkLabel(self.custombox, text=self.tr("pixel"), width=45, text_color=C["muted"], font=ctk.CTkFont(size=13))
         
         if self.rtl():
@@ -617,7 +629,7 @@ class App(DnDApp):
     def opts(self):
         if not self.files[self.mode]:
             raise ValueError(self.tr("need_files"))
-        if not self.out.get().strip() or not Path(self.out.get()).is_dir():
+        if self.out.get().strip() and not Path(self.out.get().strip()).is_dir():
             raise ValueError(self.tr("need_output"))
             
         if self.mode == "video":
@@ -641,6 +653,7 @@ class App(DnDApp):
         return round(self.q.get()), None if self.fmt.get() == "Original" else self.fmt.get().upper(), w, h, self.gray.get()
 
     def start(self):
+        self.out.set(self.output_entry.get())
         try:
             o = self.opts()
         except ValueError as e:
@@ -654,7 +667,7 @@ class App(DnDApp):
         self.busy = True
         self.start_button.configure(state="disabled")
         self.bar.set(0)
-        threading.Thread(target=self.work, args=(self.mode, list(self.files[self.mode]), self.out.get(), o), daemon=True).start()
+        threading.Thread(target=self.work, args=(self.mode, list(self.files[self.mode]), self.out.get().strip(), o), daemon=True).start()
 
     def work(self, mode, files, folder, o):
         old = new = ok = 0
@@ -662,10 +675,11 @@ class App(DnDApp):
         
         for i, p in enumerate(files, 1):
             try:
+                destination = folder or str(Path(p).parent)
                 if mode == "image":
-                    a, b = pack_image(p, folder, *o)
+                    a, b = pack_image(p, destination, *o)
                 else:
-                    a, b = pack_video(o[0], p, folder, *o[1:])
+                    a, b = pack_video(o[0], p, destination, *o[1:])
                 old += a
                 new += b
                 ok += 1

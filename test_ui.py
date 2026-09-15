@@ -1,4 +1,7 @@
 import unittest
+import tempfile
+from pathlib import Path
+from PIL import Image
 
 import customtkinter as ctk
 
@@ -97,6 +100,23 @@ class SettingsTests(unittest.TestCase):
             button = app.start_button
             self.assertTrue(button.winfo_ismapped())
             self.assertLessEqual(button.winfo_rooty() + button.winfo_height(), app.winfo_rooty() + app.winfo_height())
+
+    def test_default_output_beside_each_input(self):
+        app = self.app
+        with tempfile.TemporaryDirectory() as folder:
+            sources = []
+            for name in ("one", "two"):
+                parent = Path(folder) / name
+                parent.mkdir()
+                source = parent / "photo.jpg"
+                Image.new("RGB", (20, 20), "red").save(source)
+                sources.append(str(source))
+            app.files["image"] = sources
+            app.out.set("")
+            app.work("image", sources, "", app.opts())
+            for source in sources:
+                self.assertTrue(Path(source).with_name("photo_compressed.jpg").is_file())
+                self.assertTrue(Path(source).is_file())
 
 
 if __name__ == "__main__":

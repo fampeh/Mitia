@@ -72,7 +72,7 @@ class SettingsTests(unittest.TestCase):
                     self.assertLess(abs(popup.winfo_width() - menu.winfo_width()), 3)
                     self.assertTrue(popup.winfo_rooty() >= menu.winfo_rooty() + menu.winfo_height()
                                     or popup.winfo_rooty() + popup.winfo_height() <= menu.winfo_rooty())
-                    menu.choose("Original")
+                    menu.choose(app.tr("original"))
                     app.update()
                     self.assertIsNone(app.menu_popup)
                     self.assertFalse(box.winfo_ismapped())

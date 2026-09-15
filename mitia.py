@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 NAME = "Mitia"
-VERSION = "2.7.0"
+VERSION = "2.8.0"
 
 IMG = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 VID = {".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v"}
@@ -35,13 +35,14 @@ C = {
 
 T = {
     "fa": {
-        "image": "تصاویر", "video": "ویدئوها", "lang": "English", 
+        "image": "تصاویر", "video": "ویدئوها", "lang": "انگلیسی",
         "drop": "فایل‌ها را اینجا رها کنید", "add": "افزودن فایل", 
-        "folder": "افزودن پوشه", "remove": "حذف", "clear": "پاک کردن", 
+        "folder": "افزودن پوشه", "remove": "حذف", "clear": "پاک کردن همه",
+        "compression": "میزان فشرده‌سازی", "original": "اصلی", "custom_option": "دلخواه", "pixel": "پیکسل",
         "quality": "کیفیت", "format": "فرمت خروجی", "dimensions": "ابعاد", 
         "width": "عرض", "height": "ارتفاع", "gray": "سیاه‌وسفید", 
         "output": "پوشه خروجی", "browse": "انتخاب", "start": "شروع فشرده‌سازی", 
-        "codec": "کدک", "resolution": "رزولوشن", "selected": "{count} فایل انتخاب شد", 
+        "codec": "کدگذاری", "resolution": "وضوح تصویر", "selected": "{count} فایل انتخاب شد",
         "processing": "در حال پردازش: {number} از {total} · {name}", 
         "done": "پایان یافت: {count} فایل · {old} ← {new}", 
         "need_files": "لطفاً حداقل یک فایل انتخاب کنید.", 
@@ -53,7 +54,8 @@ T = {
     "en": {
         "image": "Images", "video": "Videos", "lang": "فارسی", 
         "drop": "Drop files here", "add": "Add files", 
-        "folder": "Add folder", "remove": "Remove", "clear": "Clear", 
+        "folder": "Add folder", "remove": "Remove", "clear": "Clear all",
+        "compression": "Compression level", "original": "Original", "custom_option": "Custom", "pixel": "px",
         "quality": "Quality", "format": "Output format", "dimensions": "Dimensions", 
         "width": "Width", "height": "Height", "gray": "Black & white", 
         "output": "Output folder", "browse": "Browse", "start": "Start Compress", 
@@ -288,7 +290,7 @@ class App(DnDApp):
 
     def header(self, p):
         name = get_display(arabic_reshaper.reshape("میتیا")) if self.rtl() else NAME
-        self.title(f"{name} {VERSION}")
+        self.title(f"{'میتیا' if self.rtl() else NAME} {VERSION}")
         h = ctk.CTkFrame(p, fg_color="transparent")
         h.pack(fill="x", pady=(0, 12))
         
@@ -381,12 +383,12 @@ class App(DnDApp):
             fg_color=C["blue"], hover_color=C["hover"], text_color="#ffffff"
         )
         self.start_button.pack(side="right" if self.rtl() else "left")
-        self.dropzone(root)
         self.settings_ui(root)
+        self.dropzone(root)
 
     def dropzone(self, p):
         card = ctk.CTkFrame(p, fg_color=C["panel"], corner_radius=12, border_width=1, border_color=C["line"], height=210)
-        card.pack(fill="x", pady=(0, 15))
+        card.pack(fill="both", expand=True, pady=(0, 15))
         card.pack_propagate(False)
         
         top_bar = ctk.CTkFrame(card, fg_color="transparent")
@@ -425,15 +427,16 @@ class App(DnDApp):
 
     def settings_ui(self, p):
         panel = ctk.CTkFrame(p, fg_color=C["panel"], corner_radius=12, border_width=1, border_color=C["line"])
-        panel.pack(fill="x", pady=(0, 5))
-        panel.grid_columnconfigure((0, 1), weight=1, uniform="settings")
+        panel.pack(fill="x", side="bottom", pady=(0, 5))
+        columns = 2 if self.mode == "image" else 3
+        panel.grid_columnconfigure(tuple(range(columns)), weight=1, uniform="settings")
         
         self.q = tk.IntVar(value=80 if self.mode == "image" else 23)
         self.gray = tk.BooleanVar()
         
         left, right = (1, 0) if self.rtl() else (0, 1)
         
-        self.group(panel, left, 0, self.tr("quality") if self.mode == "image" else "CRF", self.quality)
+        self.group(panel, left if self.mode == "image" else (2 if self.rtl() else 0), 0, self.tr("quality") if self.mode == "image" else self.tr("compression"), self.quality)
         
         if self.mode == "image":
             self.fmt = tk.StringVar(value="Original")
@@ -448,11 +451,11 @@ class App(DnDApp):
             self.codec = tk.StringVar(value="H.264 / AVC")
             self.res = tk.StringVar(value="Original")
             
-            self.group(panel, right, 0, self.tr("codec"), lambda p: self.menu(p, self.codec, ["H.264 / AVC", "H.265 / HEVC"]))
-            self.group(panel, left, 1, self.tr("resolution"), lambda p: self.menu(p, self.res, ["Original", "1080p", "720p", "480p"]))
+            self.group(panel, 1, 0, self.tr("codec"), lambda p: self.menu(p, self.codec, ["H.264 / AVC", "H.265 / HEVC"]))
+            self.group(panel, 0 if self.rtl() else 2, 0, self.tr("resolution"), lambda p: self.menu(p, self.res, ["Original", "1080p", "720p", "480p"]))
             
         out_frame = ctk.CTkFrame(panel, fg_color="transparent")
-        out_frame.grid(row=3, column=0, columnspan=2, sticky="ew", padx=25, pady=(10, 20))
+        out_frame.grid(row=3, column=0, columnspan=columns, sticky="ew", padx=25, pady=(10, 20))
         out_frame.grid_columnconfigure(1, weight=1)
         
         a, b = (2, 0) if self.rtl() else (0, 2)
@@ -471,6 +474,11 @@ class App(DnDApp):
     def group(self, p, col, row, label, build, span=1):
         g = ctk.CTkFrame(p, fg_color="transparent")
         g.grid(row=row, column=col, columnspan=span, sticky="ew", padx=20, pady=12)
+        if self.mode == "video":
+            g.grid_columnconfigure(0, weight=1)
+            ctk.CTkLabel(g, text=label, anchor=self.anchor(), font=ctk.CTkFont(size=14, weight="bold")).grid(row=0, column=0, sticky="ew", pady=(0, 6))
+            build(g).grid(row=1, column=0, sticky="ew")
+            return
         
         label_col, control_col = (1, 0) if self.rtl() else (0, 1)
         g.grid_columnconfigure(control_col, weight=1)
@@ -483,8 +491,16 @@ class App(DnDApp):
         build(holder).grid(row=0, column=0, sticky="ew" if label in (self.tr("quality"), "CRF") else self.anchor())
 
     def menu(self, p, var, values, width=160):
+        labels = {"Original": self.tr("original"), "Custom": self.tr("custom_option")}
+        if self.rtl():
+            labels.update({"JPEG": "جی‌پگ", "WebP": "وب‌پی", "H.264 / AVC": "اچ ۲۶۴", "H.265 / HEVC": "اچ ۲۶۵", "1080p": "۱۰۸۰", "720p": "۷۲۰", "480p": "۴۸۰"})
+            labels = {k: get_display(arabic_reshaper.reshape(v)) if k not in ("Original", "Custom") else v for k, v in labels.items()}
+        reverse = {labels.get(v, v): v for v in values}
+        display = tk.StringVar(master=self, value=labels.get(var.get(), var.get()))
+        display.trace_add("write", lambda *_: var.set(reverse.get(display.get(), display.get())) if var.get() != reverse.get(display.get(), display.get()) else None)
+        var.trace_add("write", lambda *_: display.set(labels.get(var.get(), var.get())) if display.get() != labels.get(var.get(), var.get()) else None)
         menu = CompactMenu(
-            p, variable=var, values=values, width=width, dynamic_resizing=False, height=36, corner_radius=6,
+            p, variable=display, values=[labels.get(v, v) for v in values], width=width, dynamic_resizing=False, height=36, corner_radius=6,
             fg_color=C["field"], button_color=C["line"], button_hover_color=C["blue"], text_color=C["text"],
             anchor="center", dropdown_fg_color=C["panel"], dropdown_hover_color=C["line"], 
             dropdown_font=ctk.CTkFont(family="Vazirmatn", size=13), font=ctk.CTkFont(size=13)
@@ -526,7 +542,7 @@ class App(DnDApp):
         axis = self.menu(self.custombox, self.axis, [self.tr("width"), self.tr("height")], width=88)
         numeric = (self.register(lambda v: v == "" or (v.isascii() and v.isdigit())), "%P")
         entry = ctk.CTkEntry(self.custombox, textvariable=self.custom, validate="key", validatecommand=numeric, justify="center", width=80, height=36, fg_color=C["field"], border_width=0, text_color=C["text"])
-        px = ctk.CTkLabel(self.custombox, text="px", width=30, text_color=C["muted"], font=ctk.CTkFont(size=13))
+        px = ctk.CTkLabel(self.custombox, text=self.tr("pixel"), width=45, text_color=C["muted"], font=ctk.CTkFont(size=13))
         
         if self.rtl():
             axis.grid(row=0, column=2, padx=(0, 10))
@@ -541,7 +557,7 @@ class App(DnDApp):
         return f
 
     def custom_toggle(self, value):
-        if value == "Custom":
+        if self.dim.get() == "Custom":
             self.custombox.grid()
         else:
             self.custombox.grid_remove()
@@ -550,7 +566,7 @@ class App(DnDApp):
         return IMG if self.mode == "image" else VID
 
     def add(self):
-        self.add_paths(filedialog.askopenfilenames(filetypes=[("Media", " ".join(f"*{x}" for x in self.ext())), ("All", "*.*")]))
+        self.add_paths(filedialog.askopenfilenames(title="انتخاب فایل" if self.rtl() else "Select files", filetypes=[("تصاویر و ویدئوها" if self.rtl() else "Media", " ".join(f"*{x}" for x in self.ext())), ("همهٔ فایل‌ها" if self.rtl() else "All files", "*.*")]))
 
     def folder(self):
         p = filedialog.askdirectory()

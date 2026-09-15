@@ -64,6 +64,13 @@ class SettingsTests(unittest.TestCase):
                     app.mainloop()
                     menu = app.dimension_menu
                     box = app.custombox
+                    panel = menu.master.master.master
+                    for group in panel.winfo_children():
+                        if group.grid_info().get("row") == 0:
+                            self.assertGreaterEqual(group.winfo_rootx(), panel.winfo_rootx())
+                            self.assertLessEqual(group.winfo_rootx() + group.winfo_width(), panel.winfo_rootx() + panel.winfo_width())
+                    checkbox = app.gray_checkbox
+                    self.assertLess(abs(checkbox.winfo_rooty() + checkbox.winfo_height() / 2 - menu.winfo_rooty() - menu.winfo_height() / 2), 3)
                     self.assertLess(abs(menu.winfo_rooty() - box.winfo_rooty()), 3)
                     self.assertGreaterEqual(box.winfo_rootx(), app.winfo_rootx())
                     self.assertLessEqual(box.winfo_rootx() + box.winfo_width(), app.winfo_rootx() + app.winfo_width())

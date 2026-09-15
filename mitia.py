@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 NAME = "Mitia"
-VERSION = "2.9.0"
+VERSION = "2.9.1"
 
 IMG = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 VID = {".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v"}
@@ -430,18 +430,19 @@ class App(DnDApp):
     def settings_ui(self, p):
         panel = ctk.CTkFrame(p, fg_color=C["panel"], corner_radius=12, border_width=1, border_color=C["line"])
         panel.pack(fill="x", side="bottom", pady=(0, 5))
-        columns = 3
+        columns = 4 if self.mode == "image" else 3
         panel.grid_columnconfigure(tuple(range(columns)), weight=1, uniform="settings")
         if self.mode == "image":
             panel.grid_columnconfigure(tuple(range(columns)), uniform="")
-            panel.grid_columnconfigure(0 if self.rtl() else 2, weight=2)
+            panel.grid_columnconfigure(1 if self.rtl() else 2, weight=2)
+            panel.grid_columnconfigure(0 if self.rtl() else 3, weight=0)
         
         self.q = tk.IntVar(value=80 if self.mode == "image" else 23)
         self.gray = tk.BooleanVar()
         
         left, right = (1, 0) if self.rtl() else (0, 1)
         
-        self.group(panel, 2 if self.rtl() else 0, 0, self.tr("quality") if self.mode == "image" else self.tr("compression"), self.quality)
+        self.group(panel, columns - 1 if self.rtl() else 0, 0, self.tr("quality") if self.mode == "image" else self.tr("compression"), self.quality)
         
         if self.mode == "image":
             self.fmt = tk.StringVar(value="Original")
@@ -449,9 +450,9 @@ class App(DnDApp):
             self.axis = tk.StringVar(value=self.tr("width"))
             self.custom = tk.StringVar()
             
-            self.group(panel, 1, 0, self.tr("format"), lambda p: self.menu(p, self.fmt, ["Original", "JPEG", "WebP"]))
-            self.group(panel, 0 if self.rtl() else 2, 0, self.tr("dimensions"), self.dimension)
-            ctk.CTkCheckBox(panel, text=self.tr("gray"), variable=self.gray, fg_color=C["blue"], hover_color=C["hover"], text_color=C["text"], font=ctk.CTkFont(size=13)).grid(row=2, column=left, sticky=self.anchor(), padx=25, pady=(5, 15))
+            self.group(panel, 2 if self.rtl() else 1, 0, self.tr("format"), lambda p: self.menu(p, self.fmt, ["Original", "JPEG", "WebP"], width=100))
+            self.group(panel, 1 if self.rtl() else 2, 0, self.tr("dimensions"), self.dimension)
+            self.group(panel, 0 if self.rtl() else 3, 0, "", self.grayscale)
         else:
             self.codec = tk.StringVar(value="H.264 / AVC")
             self.res = tk.StringVar(value="Original")
@@ -488,11 +489,11 @@ class App(DnDApp):
 
     def group(self, p, col, row, label, build, span=1):
         g = ctk.CTkFrame(p, fg_color="transparent")
-        g.grid(row=row, column=col, columnspan=span, sticky="ew", padx=10, pady=12)
+        g.grid(row=row, column=col, columnspan=span, sticky="ew", padx=8, pady=12)
         if self.mode in ("image", "video"):
             g.grid_columnconfigure(0, weight=1)
             ctk.CTkLabel(g, text=label, anchor=self.anchor(), font=ctk.CTkFont(size=14, weight="bold")).grid(row=0, column=0, sticky="ew", pady=(0, 6))
-            build(g).grid(row=1, column=0, sticky="ew")
+            build(g).grid(row=1, column=0, sticky="ew" if label in (self.tr("quality"), self.tr("compression")) else self.anchor())
             return
         
         label_col, control_col = (1, 0) if self.rtl() else (0, 1)
@@ -519,6 +520,13 @@ class App(DnDApp):
         )
         return menu
 
+    def grayscale(self, p):
+        holder = ctk.CTkFrame(p, fg_color="transparent", height=36, width=100)
+        holder.grid_propagate(False)
+        self.gray_checkbox = ctk.CTkCheckBox(holder, text=self.tr("gray"), variable=self.gray, width=100, checkbox_width=20, checkbox_height=20, fg_color=C["blue"], hover_color=C["hover"], text_color=C["text"], font=ctk.CTkFont(size=12))
+        self.gray_checkbox.place(relx=1 if self.rtl() else 0, rely=.5, anchor="e" if self.rtl() else "w")
+        return holder
+
     def quality(self, p):
         f = ctk.CTkFrame(p, fg_color="transparent")
         f.grid_columnconfigure(0, weight=1)
@@ -526,7 +534,7 @@ class App(DnDApp):
         value = ctk.CTkLabel(f, textvariable=self.q, width=32, font=ctk.CTkFont(size=13, weight="bold"), text_color=C["blue"])
         slider = ctk.CTkSlider(
             f, from_=1 if self.mode == "image" else 0, to=100 if self.mode == "image" else 51,
-            variable=self.q, number_of_steps=99 if self.mode == "image" else 51, width=120,
+            variable=self.q, number_of_steps=99 if self.mode == "image" else 51, width=80 if self.mode == "image" else 120,
             progress_color=C["blue"], button_color=C["text"], button_hover_color=C["blue"]
         )
         
@@ -542,7 +550,7 @@ class App(DnDApp):
     def dimension(self, p):
         f = ctk.CTkFrame(p, fg_color="transparent")
         
-        menu = self.menu(f, self.dim, ["Original", "1920 × 1080", "1280 × 720", "800 × 600", "Custom"])
+        menu = self.menu(f, self.dim, ["Original", "1920 × 1080", "1280 × 720", "800 × 600", "Custom"], width=110)
         menu.configure(command=self.custom_toggle)
         self.dimension_menu = menu
         menu.grid(row=0, column=1 if self.rtl() else 0)

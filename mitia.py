@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 NAME = "Mitia"
-VERSION = "2.9.2"
+VERSION = "2.9.3"
 
 IMG = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 VID = {".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v"}
@@ -195,15 +195,8 @@ class CompactMenu(ctk.CTkOptionMenu):
                 command=lambda v=value: self.choose(v))
             button.pack(fill="x", padx=5, pady=2)
         popup.bind("<Escape>", lambda _e: root.dismiss_menu())
-        def close_if_unfocused():
-            if root.menu_popup is popup:
-                focus = root.focus_get()
-                if focus is None or focus.winfo_toplevel() is not popup:
-                    root.dismiss_menu()
-        popup.bind("<FocusOut>", lambda _e: root.after_idle(close_if_unfocused))
         popup.deiconify()
         popup.lift()
-        popup.focus_set()
 
     def choose(self, value):
         self.set(value)

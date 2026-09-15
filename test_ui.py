@@ -5,7 +5,7 @@ from PIL import Image
 
 import customtkinter as ctk
 
-from mitia import App
+from mitia import App, CompactMenu
 
 
 class SettingsTests(unittest.TestCase):
@@ -123,6 +123,33 @@ class SettingsTests(unittest.TestCase):
             for source in sources:
                 self.assertTrue(Path(source).with_name("photo_compressed.jpg").is_file())
                 self.assertTrue(Path(source).is_file())
+
+    def test_menus_remain_open_after_click(self):
+        app = self.app
+        def descendants(widget):
+            for child in widget.winfo_children():
+                yield child
+                yield from descendants(child)
+        for mode in ("image", "video"):
+            app.pick(mode)
+            for language in ("fa", "en"):
+                if app.lang != language:
+                    app.change_lang()
+                app.update()
+                app.after(300, app.quit)
+                app.mainloop()
+                menus = [w for w in descendants(app) if isinstance(w, CompactMenu)]
+                for menu in menus:
+                    if not menu.winfo_ismapped():
+                        continue
+                    menu._canvas.event_generate("<Button-1>", x=menu.winfo_width()-10, y=10)
+                    app.after(300, app.quit)
+                    app.mainloop()
+                    self.assertIs(app.menu_owner, menu)
+                    self.assertIsNotNone(app.menu_popup)
+                    self.assertTrue(app.menu_popup.winfo_ismapped())
+                    menu.choose(menu.cget("values")[0])
+                    self.assertIsNone(app.menu_popup)
 
 
 if __name__ == "__main__":

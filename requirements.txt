@@ -1,0 +1,6 @@
+customtkinter==6.0.0
+Pillow
+tkinterdnd2
+arabic-reshaper
+python-bidi
+PyInstaller==6.20.0

@@ -178,6 +178,29 @@ class SettingsTests(unittest.TestCase):
                     self.assertLess(abs(checkbox.winfo_rootx() + checkbox.winfo_width() - browse.winfo_rootx() - browse.winfo_width()), 3)
         ctk.set_widget_scaling(1.0)
 
+    def test_dimensions_apply_from_menu_and_persian_numbers(self):
+        app = self.app
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "original.jpg"
+            Image.new("RGB", (400, 300), "red").save(source)
+            app.files["image"] = [str(source)]
+            for language in ("fa", "en"):
+                if app.lang != language:
+                    app.change_lang()
+                for preset, expected in (("800 × 600", (800, 600)), (app.tr("custom_option"), (160, 120))):
+                    app.dimension_menu.choose(preset)
+                    app.update()
+                    if app.dim.get() == "Custom":
+                        app.custom_entry.delete(0, "end")
+                        app.custom_entry.insert(0, "۱۶۰")
+                        self.assertEqual(app.custom.get(), "۱۶۰")
+                        app.axis.set(app.tr("width"))
+                    app.work("image", [str(source)], "", app.opts())
+                    candidates = list(Path(folder).glob("original_compressed*.jpg"))
+                    target = max(candidates, key=lambda p: p.stat().st_mtime_ns)
+                    with Image.open(target) as result:
+                        self.assertEqual(result.size, expected)
+
 
 if __name__ == "__main__":
     unittest.main()

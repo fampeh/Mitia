@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 NAME = "Mitia"
-VERSION = "2.9.4"
+VERSION = "2.9.5"
 
 IMG = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 VID = {".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v"}
@@ -110,7 +110,9 @@ def pack_image(source, folder, quality, wanted, width, height, gray):
         
     if width or height:
         if width and height:
-            image.thumbnail((width, height), Image.Resampling.LANCZOS)
+            ow, oh = image.size
+            ratio = min(width / ow, height / oh)
+            image = image.resize((max(1, round(ow * ratio)), max(1, round(oh * ratio))), Image.Resampling.LANCZOS)
         else:
             ow, oh = image.size
             new = (width, max(1, round(oh * width / ow))) if width else (max(1, round(ow * height / oh)), height)
@@ -572,8 +574,9 @@ class App(DnDApp):
         self.custombox.grid_columnconfigure(1, weight=1)
         
         axis = self.menu(self.custombox, self.axis, [self.tr("width"), self.tr("height")], width=88)
-        numeric = (self.register(lambda v: v == "" or (v.isascii() and v.isdigit())), "%P")
+        numeric = (self.register(lambda v: v == "" or v.isdecimal()), "%P")
         entry = ctk.CTkEntry(self.custombox, textvariable=self.custom, validate="key", validatecommand=numeric, justify="center", width=72, height=36, fg_color=C["bg"], border_width=1, border_color=C["blue"], text_color=C["text"])
+        self.custom_entry = entry
         px = ctk.CTkLabel(self.custombox, text=self.tr("pixel"), width=45, text_color=C["muted"], font=ctk.CTkFont(size=13))
         
         if self.rtl():

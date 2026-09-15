@@ -17,68 +17,65 @@ from PIL import Image, ImageOps
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 NAME = "Mitia"
-VERSION = "2.9.6"
+VERSION = "2.9.7"
 
-IMG = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+# .tif/.tiff حذف شد چون Pillow فقط frame اول را می‌خواند → از دست رفتن صفحات (bug #3)
+IMG = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 VID = {".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v"}
 
 C = {
-    "bg": "#0f172a",
-    "panel": "#1e293b",
-    "field": "#020617",
-    "line": "#334155",
-    "text": "#f8fafc",
-    "muted": "#94a3b8",
-    "blue": "#3b82f6",
-    "hover": "#2563eb",
-    "danger": "#ef4444",
-    "danger_hover": "#dc2626"
+    "bg": "#0f172a", "panel": "#1e293b", "field": "#020617", "line": "#334155",
+    "text": "#f8fafc", "muted": "#94a3b8", "blue": "#3b82f6", "hover": "#2563eb",
+    "danger": "#ef4444", "danger_hover": "#dc2626"
 }
 
 T = {
     "fa": {
         "image": "تصاویر", "video": "ویدئوها", "lang": "English",
         "output_hint": "خالی بگذارید: ذخیره کنار فایل اصلی",
-        "drop": "فایل‌ها را اینجا رها کنید", "add": "افزودن فایل", 
+        "drop": "فایل‌ها را اینجا رها کنید", "add": "افزودن فایل",
         "folder": "افزودن پوشه", "remove": "حذف", "clear": "پاک کردن همه",
         "compression": "میزان فشرده‌سازی", "original": "اصلی", "custom_option": "دلخواه", "pixel": "پیکسل",
-        "quality": "کیفیت", "format": "فرمت خروجی", "dimensions": "ابعاد", 
-        "width": "عرض", "height": "ارتفاع", "gray": "سیاه‌وسفید", 
-        "output": "پوشه خروجی", "browse": "انتخاب", "start": "شروع فشرده‌سازی", 
+        "quality": "کیفیت", "format": "فرمت خروجی", "dimensions": "ابعاد",
+        "width": "عرض", "height": "ارتفاع", "gray": "سیاه‌وسفید",
+        "output": "پوشه خروجی", "browse": "انتخاب", "start": "شروع فشرده‌سازی",
         "codec": "کدگذاری", "resolution": "وضوح تصویر", "selected": "{count} فایل انتخاب شد",
-        "processing": "در حال پردازش: {number} از {total} · {name}", 
-        "done": "پایان یافت: {count} فایل · {old} ← {new}", 
-        "need_files": "لطفاً حداقل یک فایل انتخاب کنید.", 
-        "need_output": "لطفاً پوشه خروجی را مشخص کنید.", 
-        "custom": "مقدار ابعاد دلخواه باید یک عدد مثبت باشد.", 
-        "ffmpeg": "ابزار FFmpeg در این نسخه یافت نشد.", 
+        "processing": "در حال پردازش: {number} از {total} · {name}",
+        "done": "پایان یافت: {count} فایل · {old} ← {new}",
+        "need_files": "لطفاً حداقل یک فایل انتخاب کنید.",
+        "need_output": "لطفاً پوشه خروجی را مشخص کنید.",
+        "custom": "مقدار ابعاد دلخواه باید یک عدد مثبت باشد.",
+        "ffmpeg": "ابزار FFmpeg در این نسخه یافت نشد.",
         "close_busy": "پردازش متوقف شود و برنامه بسته شود؟",
-        "errors": "خطا در پردازش"
+        "errors": "خطا در پردازش",
+        "cancelled": "پردازش لغو شد",
     },
     "en": {
-        "image": "Images", "video": "Videos", "lang": "فارسی", 
+        "image": "Images", "video": "Videos", "lang": "فارسی",
         "output_hint": "Leave blank to save beside each original file",
-        "drop": "Drop files here", "add": "Add files", 
+        "drop": "Drop files here", "add": "Add files",
         "folder": "Add folder", "remove": "Remove", "clear": "Clear all",
         "compression": "Compression level", "original": "Original", "custom_option": "Custom", "pixel": "px",
-        "quality": "Quality", "format": "Output format", "dimensions": "Dimensions", 
-        "width": "Width", "height": "Height", "gray": "Black & white", 
-        "output": "Output folder", "browse": "Browse", "start": "Start Compress", 
-        "codec": "Codec", "resolution": "Resolution", "selected": "{count} files selected", 
-        "processing": "Processing: {number} / {total} · {name}", 
-        "done": "Completed: {count} files · {old} → {new}", 
-        "need_files": "Please choose at least one file.", 
-        "need_output": "Please choose an output folder.", 
-        "custom": "Custom dimension must be a positive number.", 
-        "ffmpeg": "FFmpeg is unavailable in this build.", 
+        "quality": "Quality", "format": "Output format", "dimensions": "Dimensions",
+        "width": "Width", "height": "Height", "gray": "Black & white",
+        "output": "Output folder", "browse": "Browse", "start": "Start Compress",
+        "codec": "Codec", "resolution": "Resolution", "selected": "{count} files selected",
+        "processing": "Processing: {number} / {total} · {name}",
+        "done": "Completed: {count} files · {old} → {new}",
+        "need_files": "Please choose at least one file.",
+        "need_output": "Please choose an output folder.",
+        "custom": "Custom dimension must be a positive number.",
+        "ffmpeg": "FFmpeg is unavailable in this build.",
         "close_busy": "Stop processing and close the app?",
-        "errors": "Processing errors"
+        "errors": "Processing errors",
+        "cancelled": "Processing cancelled",
     }
 }
 
 
 def asset(name):
     return Path(getattr(sys, "_MEIPASS", Path(__file__).parent)) / name
+
 
 def load_persian_font():
     font = asset("Vazirmatn-Regular.ttf")
@@ -87,9 +84,11 @@ def load_persian_font():
     if font.is_file() and sys.platform == "win32":
         ctypes.windll.gdi32.AddFontResourceExW(str(font), 0x10, 0)
 
+
 def ffmpeg():
     p = asset("ffmpeg.exe")
     return str(p) if p.exists() else shutil.which("ffmpeg")
+
 
 def unique(folder, source, ext):
     p = Path(folder) / f"{Path(source).stem}_compressed{ext}"
@@ -102,6 +101,7 @@ def unique(folder, source, ext):
 
 @contextmanager
 def output_file(folder, source, ext):
+    # FIX #1: handle پیش از unlink بسته می‌شود تا WinError 32 رخ ندهد
     while True:
         target = unique(folder, source, ext)
         try:
@@ -109,18 +109,25 @@ def output_file(folder, source, ext):
             break
         except FileExistsError:
             continue
+    success = False
     try:
         with handle:
             yield handle, target
-    except BaseException:
-        target.unlink(missing_ok=True)
-        raise
+        success = True
+    finally:
+        if not success:
+            target.unlink(missing_ok=True)
+
 
 def size(n):
     return f"{n/1024:.0f} KB" if n < 1048576 else f"{n/1048576:.2f} MB"
 
 
-def pack_image(source, folder, quality, wanted, width, height, gray):
+class ProcessingCancelled(Exception):
+    pass
+
+
+def pack_image(source, folder, quality, wanted, width, height, gray, cancel=None):
     source = Path(source)
     with Image.open(source) as opened:
         fmt = wanted or (opened.format or "JPEG").upper()
@@ -128,7 +135,10 @@ def pack_image(source, folder, quality, wanted, width, height, gray):
         ext = {"JPEG": ".jpg", "WEBP": ".webp", "PNG": ".png", "BMP": ".bmp", "TIFF": ".tiff"}.get(fmt, source.suffix) if wanted else source.suffix
         image = ImageOps.exif_transpose(opened)
         image.load()
-        
+
+    if cancel is not None and cancel.is_set():
+        raise ProcessingCancelled()
+
     if width or height:
         if width and height:
             ow, oh = image.size
@@ -138,14 +148,17 @@ def pack_image(source, folder, quality, wanted, width, height, gray):
             ow, oh = image.size
             new = (width, max(1, round(oh * width / ow))) if width else (max(1, round(ow * height / oh)), height)
             image = image.resize(new, Image.Resampling.LANCZOS)
-            
+
+    if cancel is not None and cancel.is_set():
+        raise ProcessingCancelled()
+
     if gray:
         alpha = image.getchannel("A") if "A" in image.getbands() else None
         image = ImageOps.grayscale(image.convert("RGB"))
         if alpha:
             image = image.convert("RGBA")
             image.putalpha(alpha)
-            
+
     if fmt == "JPEG" and ("A" in image.getbands() or "transparency" in image.info):
         rgba = image.convert("RGBA")
         bg = Image.new("RGB", rgba.size, "white")
@@ -155,31 +168,58 @@ def pack_image(source, folder, quality, wanted, width, height, gray):
         image = image.convert("RGB")
     if fmt == "JPEG" and image.mode not in ("L", "RGB", "CMYK"):
         image = image.convert("RGB")
-    if fmt == "PNG" and image.mode == "CMYK":
+    # FIX #2: CMYK در WEBP/BMP هم پشتیبانی نمی‌شود
+    if fmt in ("WEBP", "PNG", "BMP") and image.mode == "CMYK":
         image = image.convert("RGB")
-        
-    args = {"quality": quality, "optimize": True, "progressive": True} if fmt == "JPEG" else \
-           {"quality": quality, "method": 6} if fmt == "WEBP" else \
-           {"optimize": True, "compress_level": 9} if fmt == "PNG" else {}
-           
+
+    # FIX #6: برای PNG از quality کاربر compress_level مشتق می‌شود
+    if fmt == "JPEG":
+        args = {"quality": quality, "optimize": True, "progressive": True}
+    elif fmt == "WEBP":
+        args = {"quality": quality, "method": 6}
+    elif fmt == "PNG":
+        level = max(0, min(9, round((100 - quality) / 100 * 9)))
+        args = {"optimize": True, "compress_level": level}
+    else:
+        args = {}
+
     with output_file(folder, source, ext) as (handle, target):
         image.save(handle, fmt, **args)
     return source.stat().st_size, target.stat().st_size
 
-class ProcessingCancelled(Exception):
-    pass
-
 
 def pack_video(exe, source, folder, crf, codec, height, cancel=None):
     source = Path(source)
-    scale = f"scale=-2:{height}" if height else "scale=trunc(iw/2)*2:trunc(ih/2)*2"
-    cmd = [exe, "-nostdin", "-hide_banner", "-loglevel", "error", "-n", "-i", str(source),
-           "-map", "0:v:0", "-map", "0:a:0?", "-c:v", codec, "-preset", "slow", "-crf", str(crf),
-           "-vf", scale, "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart"]
+    # FIX #5: هرگز upscale نکن، فقط اگر ورودی بزرگ‌تر بود کوچک کن
+    if height:
+        scale = (
+            f"scale=w='if(gt(ih,{height}),-2,trunc(iw/2)*2)':"
+            f"h='if(gt(ih,{height}),{height},trunc(ih/2)*2)'"
+        )
+    else:
+        scale = "scale=trunc(iw/2)*2:trunc(ih/2)*2"
+
+    # FIX #4: همه‌ی trackهای صدا/زیرنویس/attachment حفظ می‌شوند
+    cmd = [
+        exe, "-nostdin", "-hide_banner", "-loglevel", "error", "-n",
+        "-i", str(source),
+        "-map", "0:v:0", "-map", "0:a?", "-map", "0:s?", "-map", "0:t?",
+        "-c:v", codec, "-preset", "slow", "-crf", str(crf),
+        "-vf", scale, "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "128k",
+        "-c:s", "mov_text",
+        "-map_metadata", "0", "-map_chapters", "0",
+        "-movflags", "+faststart",
+    ]
+
     with tempfile.TemporaryDirectory(prefix=".mitia-", dir=folder) as temp_folder:
         temp = Path(temp_folder) / "video.mp4"
-        with subprocess.Popen(cmd + [str(temp)], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
-                              encoding="utf-8", errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)) as process:
+        with subprocess.Popen(
+            cmd + [str(temp)],
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+            encoding="utf-8", errors="replace",
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        ) as process:
             while True:
                 if cancel is not None and cancel.is_set():
                     process.terminate()
@@ -192,8 +232,10 @@ def pack_video(exe, source, folder, crf, codec, height, cancel=None):
                     continue
             if process.returncode:
                 raise RuntimeError(error.strip()[-2000:] or "FFmpeg failed")
+
         if cancel is not None and cancel.is_set():
             raise ProcessingCancelled()
+
         with output_file(folder, source, ".mp4") as (handle, target), temp.open("rb") as encoded:
             shutil.copyfileobj(encoded, handle)
     return source.stat().st_size, target.stat().st_size
@@ -281,11 +323,11 @@ class CompactMenu(ctk.CTkOptionMenu):
 class App(DnDApp):
     def __init__(self):
         super().__init__()
-        
+
         load_persian_font()
         ctk.ThemeManager.theme["CTkFont"]["family"] = "Vazirmatn"
         ctk.set_appearance_mode("dark")
-        
+
         self.lang = "fa"
         self.mode = None
         self.busy = False
@@ -302,17 +344,17 @@ class App(DnDApp):
         self.bind("<Button-1>", self.dismiss_outside, add="+")
         self.bind("<Escape>", lambda _e: self.dismiss_menu(), add="+")
         self.bind("<Configure>", lambda e: self.dismiss_menu() if e.widget is self else None, add="+")
-        
+
         self.title(f"{NAME} {VERSION}")
         self.geometry("980x820")
         self.minsize(800, 720)
         self.configure(fg_color=C["bg"])
-        
+
         try:
             self.iconbitmap(default=str(asset("mitia.ico")))
         except tk.TclError:
             pass
-            
+
         self.after(100, self.poll)
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.home()
@@ -388,11 +430,11 @@ class App(DnDApp):
         fg_col = C["danger"] if danger else (C["blue"] if active else C["panel"])
         hov_col = C["danger_hover"] if danger else (C["hover"] if active else C["line"])
         border_col = C["danger"] if danger else (C["blue"] if active else C["line"])
-        
+
         return ctk.CTkButton(
             p, text=text, command=cmd, width=width, height=40, corner_radius=8,
             fg_color=fg_col, hover_color=hov_col, text_color=C["text"],
-            border_width=1, border_color=border_col, 
+            border_width=1, border_color=border_col,
             font=ctk.CTkFont(size=13, weight="bold")
         )
 
@@ -401,28 +443,28 @@ class App(DnDApp):
         self.title(f"{'میتیا' if self.rtl() else NAME} {VERSION}")
         h = ctk.CTkFrame(p, fg_color="transparent")
         h.pack(fill="x", pady=(0, 12))
-        
+
         logo_frame = ctk.CTkFrame(h, fg_color="transparent")
         logo_frame.pack(side=self.side())
         ctk.CTkLabel(logo_frame, text=name, font=ctk.CTkFont(size=28, weight="bold"), text_color=C["text"]).pack(side=self.side())
         ctk.CTkLabel(logo_frame, text=f"v{VERSION}", text_color=C["muted"], font=ctk.CTkFont(size=12)).pack(side=self.side(), padx=8, pady=(10, 0))
-        
+
         controls = ctk.CTkFrame(h, fg_color="transparent")
         controls.pack(side="left" if self.rtl() else "right")
-            
+
         self.button(controls, "🌐 " + self.tr("lang"), self.change_lang, width=100).pack(side=self.side())
 
     def home(self):
         self.mode = None
         self.clear()
-        
+
         root = ctk.CTkFrame(self, fg_color="transparent")
         root.pack(fill="both", expand=True, padx=50, pady=40)
         self.header(root)
-        
+
         holder = ctk.CTkFrame(root, fg_color="transparent")
         holder.pack(expand=True)
-        
+
         modes = (("video", "▶"), ("image", "▧")) if self.rtl() else (("image", "▧"), ("video", "▶"))
         for mode, icon in modes:
             self.card(holder, mode, icon)
@@ -431,13 +473,13 @@ class App(DnDApp):
         card = ctk.CTkFrame(p, width=240, height=260, fg_color=C["panel"], corner_radius=20, border_width=1, border_color=C["line"], cursor="hand2")
         card.pack(side="left", padx=20)
         card.pack_propagate(False)
-        
+
         iconw = ctk.CTkLabel(card, text=icon, font=ctk.CTkFont(size=56), text_color=C["blue"])
         iconw.pack(expand=True, pady=(40, 0))
-        
+
         title = ctk.CTkLabel(card, text=self.tr(mode), font=ctk.CTkFont(size=20, weight="bold"), text_color=C["text"])
         title.pack(expand=True, pady=(0, 40))
-        
+
         for w in (card, iconw, title):
             w.bind("<Enter>", lambda _e: card.configure(fg_color=C["line"], border_color=C["blue"]))
             w.bind("<Leave>", lambda _e: card.configure(fg_color=C["panel"], border_color=C["line"]))
@@ -459,34 +501,34 @@ class App(DnDApp):
 
     def workspace(self):
         self.clear()
-        
+
         root = ctk.CTkFrame(self, fg_color="transparent")
         root.pack(fill="both", expand=True, padx=40, pady=20)
         self.header(root)
-        
+
         tabs = ctk.CTkFrame(root, fg_color="transparent")
         tabs.pack(fill="x", pady=(0, 16))
-        
+
         modes = ("video", "image") if self.rtl() else ("image", "video")
         for m in modes:
             self.button(tabs, self.tr(m), lambda v=m: self.pick(v), m == self.mode, 140).pack(side=self.side(), padx=5)
-            
+
         self.status = tk.StringVar(value=self.msg("selected", count=len(self.files[self.mode])))
-        
+
         bottom = ctk.CTkFrame(root, fg_color="transparent")
         bottom.pack(fill="x", side="bottom", pady=(15, 0))
-        
+
         self.bar = ctk.CTkProgressBar(bottom, height=10, corner_radius=5, progress_color=C["blue"], fg_color=C["line"])
         self.bar.set(0)
         self.bar.pack(fill="x", pady=(0, 10))
-        
+
         status_frame = ctk.CTkFrame(bottom, fg_color="transparent")
         status_frame.pack(fill="x")
-        
+
         ctk.CTkLabel(status_frame, textvariable=self.status, font=ctk.CTkFont(size=13), text_color=C["muted"], anchor=self.anchor()).pack(side=self.side(), fill="x", expand=True)
-        
+
         self.start_button = ctk.CTkButton(
-            status_frame, text="⚡ " + self.tr("start"), command=self.start, 
+            status_frame, text="⚡ " + self.tr("start"), command=self.start,
             width=200, height=45, corner_radius=8, font=ctk.CTkFont(size=15, weight="bold"),
             fg_color=C["blue"], hover_color=C["hover"], text_color="#ffffff"
         )
@@ -498,36 +540,36 @@ class App(DnDApp):
         card = ctk.CTkFrame(p, fg_color=C["panel"], corner_radius=12, border_width=1, border_color=C["line"], height=210)
         card.pack(fill="both", expand=True, pady=(0, 15))
         card.pack_propagate(False)
-        
+
         top_bar = ctk.CTkFrame(card, fg_color="transparent")
         top_bar.pack(fill="x", padx=16, pady=12)
         ctk.CTkLabel(top_bar, text=self.tr("drop"), font=ctk.CTkFont(size=14, weight="bold"), text_color=C["muted"], anchor=self.anchor()).pack(side=self.side())
-        
+
         self.list_area = tk.Frame(card, bg=C["field"], highlightthickness=0)
         self.list_area.pack(fill="both", expand=True, padx=16, pady=(0, 10))
-        
+
         self.list = tk.Listbox(
             self.list_area, selectmode=tk.EXTENDED, justify="right" if self.rtl() else "left",
-            bg=C["field"], fg=C["text"], selectbackground=C["blue"], 
+            bg=C["field"], fg=C["text"], selectbackground=C["blue"],
             relief="flat", highlightthickness=0, borderwidth=0, font=("Vazirmatn", 12)
         )
         self.list.pack(fill="both", expand=True, padx=10, pady=10)
         self.list.drop_target_register(DND_FILES)
         self.list.dnd_bind("<<Drop>>", self.drop)
         self.list.bind("<Double-Button-1>", lambda _e: self.add())
-        
+
         self.drop_hint = tk.Label(self.list_area, text="+", bg=C["field"], fg=C["blue"], font=("Vazirmatn", 60, "bold"), cursor="hand2")
         self.drop_hint.drop_target_register(DND_FILES)
         self.drop_hint.dnd_bind("<<Drop>>", self.drop)
         self.drop_hint.bind("<Double-Button-1>", lambda _e: self.add())
-        
+
         self.refresh()
-        
+
         actions = (("clear", self.clear_files), ("remove", self.remove), ("folder", self.folder), ("add", self.add)) if self.rtl() else (("add", self.add), ("folder", self.folder), ("remove", self.remove), ("clear", self.clear_files))
-        
+
         row = ctk.CTkFrame(card, fg_color="transparent")
         row.pack(fill="x", side="bottom", before=self.list_area, padx=16, pady=(0, 12))
-        
+
         for k, fn in actions:
             is_danger = k in ["clear", "remove"]
             self.button(row, self.tr(k), fn, width=100, danger=is_danger).pack(side=self.side(), padx=5)
@@ -541,34 +583,34 @@ class App(DnDApp):
             panel.grid_columnconfigure(tuple(range(columns)), uniform="")
             panel.grid_columnconfigure(1 if self.rtl() else 2, weight=2)
             panel.grid_columnconfigure(0 if self.rtl() else 3, weight=0)
-        
+
         self.q = tk.IntVar(value=80 if self.mode == "image" else 23)
         self.gray = tk.BooleanVar()
-        
+
         self.group(panel, columns - 1 if self.rtl() else 0, 0, self.tr("quality") if self.mode == "image" else self.tr("compression"), self.quality)
-        
+
         if self.mode == "image":
             self.fmt = tk.StringVar(value="Original")
             self.dim = tk.StringVar(value="Original")
             self.axis = tk.StringVar(value=self.tr("width"))
             self.custom = tk.StringVar()
-            
+
             self.group(panel, 2 if self.rtl() else 1, 0, self.tr("format"), lambda p: self.menu(p, self.fmt, ["Original", "JPEG", "WebP"], width=100))
             self.group(panel, 1 if self.rtl() else 2, 0, self.tr("dimensions"), self.dimension)
             self.group(panel, 0 if self.rtl() else 3, 0, "", self.grayscale)
         else:
             self.codec = tk.StringVar(value="H.264 / AVC")
             self.res = tk.StringVar(value="Original")
-            
+
             self.group(panel, 1, 0, self.tr("codec"), lambda p: self.menu(p, self.codec, ["H.264 / AVC", "H.265 / HEVC"]))
             self.group(panel, 0 if self.rtl() else 2, 0, self.tr("resolution"), lambda p: self.menu(p, self.res, ["Original", "1080p", "720p", "480p"]))
-            
+
         out_frame = ctk.CTkFrame(panel, fg_color="transparent")
         out_frame.grid(row=3, column=0, columnspan=columns, sticky="ew", padx=25, pady=(10, 20))
         out_frame.grid_columnconfigure(1, weight=1)
-        
+
         a, b = (2, 0) if self.rtl() else (0, 2)
-        
+
         ctk.CTkLabel(out_frame, text=self.tr("output"), width=90, anchor=self.anchor(), font=ctk.CTkFont(size=14, weight="bold")).grid(row=0, column=a, padx=(0, 15))
         self.output_entry = ctk.CTkEntry(out_frame, placeholder_text=self.tr("output_hint"), justify="left", height=40, fg_color=C["field"], border_color=C["line"], corner_radius=6, text_color=C["text"], font=ctk.CTkFont(size=13))
         entry = self.output_entry
@@ -613,7 +655,7 @@ class App(DnDApp):
         menu = CompactMenu(
             p, variable=display, values=[labels.get(v, v) for v in values], width=width, dynamic_resizing=False, height=36, corner_radius=6,
             fg_color=C["field"], button_color=C["line"], button_hover_color=C["blue"], text_color=C["text"],
-            anchor="center", dropdown_fg_color=C["panel"], dropdown_hover_color=C["line"], 
+            anchor="center", dropdown_fg_color=C["panel"], dropdown_hover_color=C["line"],
             dropdown_font=ctk.CTkFont(family="Vazirmatn", size=13), font=ctk.CTkFont(size=13)
         )
         menu.model_traces = [(display, display_trace), (var, model_trace)]
@@ -629,14 +671,14 @@ class App(DnDApp):
     def quality(self, p):
         f = ctk.CTkFrame(p, fg_color="transparent")
         f.grid_columnconfigure(0, weight=1)
-        
+
         value = ctk.CTkLabel(f, textvariable=self.q, width=32, font=ctk.CTkFont(size=13, weight="bold"), text_color=C["blue"])
         slider = ctk.CTkSlider(
             f, from_=1 if self.mode == "image" else 0, to=100 if self.mode == "image" else 51,
             variable=self.q, number_of_steps=99 if self.mode == "image" else 51, width=80 if self.mode == "image" else 120,
             progress_color=C["blue"], button_color=C["text"], button_hover_color=C["blue"]
         )
-        
+
         if self.rtl():
             value.grid(row=0, column=0)
             slider.grid(row=0, column=1, sticky="ew", padx=(10, 0))
@@ -648,12 +690,12 @@ class App(DnDApp):
 
     def dimension(self, p):
         f = ctk.CTkFrame(p, fg_color="transparent")
-        
+
         menu = self.menu(f, self.dim, ["Original", "1920 × 1080", "1280 × 720", "800 × 600", "Custom"], width=110)
         menu.configure(command=self.custom_toggle)
         self.dimension_menu = menu
         menu.grid(row=0, column=1 if self.rtl() else 0)
-        
+
         slot = ctk.CTkFrame(f, fg_color="transparent", width=221, height=36)
         slot.grid(row=0, column=0 if self.rtl() else 1, padx=4)
         slot.grid_propagate(False)
@@ -661,13 +703,13 @@ class App(DnDApp):
         self.custombox = ctk.CTkFrame(slot, fg_color=C["field"], corner_radius=6, border_width=1, border_color=C["line"])
         self.custombox.grid(row=0, column=0, sticky="ew")
         self.custombox.grid_columnconfigure(1, weight=1)
-        
+
         axis = self.menu(self.custombox, self.axis, [self.tr("width"), self.tr("height")], width=88)
         numeric = (self.register(lambda v: v == "" or v.isdecimal()), "%P")
         entry = NumericEntry(self.custombox, textvariable=self.custom, validate="key", validatecommand=numeric, justify="center", width=72, height=36, fg_color=C["bg"], border_width=1, border_color=C["blue"], text_color=C["text"])
         self.custom_entry = entry
         px = ctk.CTkLabel(self.custombox, text=self.tr("pixel"), width=45, text_color=C["muted"], font=ctk.CTkFont(size=13))
-        
+
         if self.rtl():
             axis.grid(row=0, column=2, padx=(0, 4))
             entry.grid(row=0, column=1, sticky="ew")
@@ -676,7 +718,7 @@ class App(DnDApp):
             axis.grid(row=0, column=0, padx=(0, 4))
             entry.grid(row=0, column=1, sticky="ew")
             px.grid(row=0, column=2, padx=(4, 0))
-            
+
         self.custombox.grid_remove()
         return f
 
@@ -732,12 +774,12 @@ class App(DnDApp):
         self.list.delete(0, tk.END)
         for p in self.files[self.mode]:
             self.list.insert(tk.END, Path(p).name)
-            
+
         if self.files[self.mode]:
             self.drop_hint.place_forget()
         else:
             self.drop_hint.place(relx=.5, rely=.5, anchor="center")
-            
+
         self.status.set(self.msg("selected", count=len(self.files[self.mode])))
 
     def remove(self):
@@ -765,7 +807,7 @@ class App(DnDApp):
             raise ValueError(self.tr("need_files"))
         if self.out.get().strip() and not Path(self.out.get().strip()).is_dir():
             raise ValueError(self.tr("need_output"))
-            
+
         if self.mode == "video":
             return (
                 ffmpeg(),
@@ -773,17 +815,20 @@ class App(DnDApp):
                 "libx265" if self.codec.get().startswith("H.265") else "libx264",
                 {"Original": None, "1080p": 1080, "720p": 720, "480p": 480}[self.res.get()]
             )
-            
+
         d = {"Original": (None, None), "1920 × 1080": (1920, 1080), "1280 × 720": (1280, 720), "800 × 600": (800, 600)}
         if self.dim.get() == "Custom":
+            # FIX #7: نرمال‌سازی ارقام فارسی/عربی
             try:
-                v = int(self.custom.get())
+                raw = self.custom.get().translate(str.maketrans(
+                    "۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
+                v = int(raw)
                 if v <= 0:
                     raise ValueError()
             except (ValueError, AssertionError):
                 raise ValueError(self.tr("custom"))
             d["Custom"] = (v, None) if self.axis.get() == self.tr("width") else (None, v)
-            
+
         w, h = d[self.dim.get()]
         return round(self.q.get()), None if self.fmt.get() == "Original" else self.fmt.get().upper(), w, h, self.gray.get()
 
@@ -794,13 +839,13 @@ class App(DnDApp):
         try:
             o = self.opts()
         except ValueError as e:
-            messagebox.showwarning(NAME, str(e))
+            messagebox.showwarning(NAME, str(e), parent=self)
             return
-            
+
         if self.mode == "video" and not o[0]:
-            messagebox.showwarning(NAME, self.tr("ffmpeg"))
+            messagebox.showwarning(NAME, self.tr("ffmpeg"), parent=self)
             return
-            
+
         self.busy = True
         self.cancel_event.clear()
         self.dismiss_menu()
@@ -812,14 +857,15 @@ class App(DnDApp):
     def work(self, mode, files, folder, o):
         old = new = ok = 0
         errors = []
-        
+
         for i, p in enumerate(files, 1):
             if self.cancel_event.is_set():
                 return
             try:
                 destination = folder or str(Path(p).parent)
                 if mode == "image":
-                    a, b = pack_image(p, destination, *o)
+                    # FIX #8: cancel به pack_image پاس داده می‌شود
+                    a, b = pack_image(p, destination, *o, cancel=self.cancel_event)
                 else:
                     a, b = pack_video(o[0], p, destination, *o[1:], cancel=self.cancel_event)
                 old += a
@@ -829,9 +875,9 @@ class App(DnDApp):
                 return
             except Exception as e:
                 errors.append(f"{Path(p).name}: {e}")
-                
+
             self.events.put(("p", i, len(files), Path(p).name))
-            
+
         self.events.put(("d", ok, old, new, errors))
 
     def poll(self):
@@ -849,10 +895,10 @@ class App(DnDApp):
                     report = self.msg("done", count=n, old=size(old), new=size(new))
                     self.status.set(report)
                     if errors:
-                        messagebox.showwarning(self.tr("errors"), report + "\n\n" + "\n".join(errors))
+                        messagebox.showwarning(self.tr("errors"), report + "\n\n" + "\n".join(errors), parent=self)
         except queue.Empty:
             pass
-            
+
         self.after(100, self.poll)
 
 
